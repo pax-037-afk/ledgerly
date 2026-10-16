@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>Ledgerly</title>
+<meta name="description" content="Ledgerly: simple sales and expense books for small businesses in India (prototype).">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{
+  --brand:#0f766e;--on-brand:#fff;--bg:#f3f6f5;--card:#fff;--text:#14211f;--muted:#51625f;--line:#d8e1df;
+  --sale:#0f766e;--exp:#b45309;--danger:#b91c1c;--focus:#1d4ed8;--tint:rgba(15,118,110,.10);--nav-h:64px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--brand:#14b8a6;--on-brand:#03201d;--bg:#0e1514;--card:#162120;--text:#e8f1ef;--muted:#a3b7b3;--line:#2a3b39;
+    --sale:#2dd4bf;--exp:#fbbf24;--danger:#f87171;--focus:#93c5fd;--tint:rgba(20,184,166,.16)}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;background:var(--bg);color:var(--text)}
+h1{font-size:1.5rem;margin:.2rem 0 .6rem}
+h2{font-size:1.1rem;margin:0 0 .6rem}
+h3{font-size:1rem;margin:1rem 0 .4rem}
+h1:focus{outline:none}
+a{color:var(--brand)}
+.muted{color:var(--muted)}.small{font-size:.875rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.skip{position:absolute;left:8px;top:-60px;background:var(--card);color:var(--text);padding:8px 12px;border-radius:8px;z-index:100}
+.skip:focus{top:8px}
+
+.app{min-height:100vh}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 16px;padding-top:calc(8px + env(safe-area-inset-top));background:var(--brand);color:var(--on-brand)}
+.brand{font-weight:800;font-size:1.25rem;letter-spacing:.2px}
+.brand small{display:block;font-weight:400;font-size:.75rem;opacity:.9;max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spacer{flex:1}
+.topbar .btn{background:transparent;color:var(--on-brand);border-color:currentColor}
+.topbar .btn.primary{background:var(--on-brand);color:var(--brand);border-color:var(--on-brand)}
+
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.nav a{flex:1;min-height:var(--nav-h);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.78rem;color:var(--muted);text-decoration:none}
+.nav a[aria-current="page"]{color:var(--brand);font-weight:700;box-shadow:inset 0 3px 0 var(--brand)}
+main{padding:16px 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom));max-width:1100px;margin:0 auto}
+@media(min-width:900px){
+  .app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:auto 1fr}
+  .topbar{grid-column:1/-1}
+  .nav{position:sticky;top:60px;align-self:start;flex-direction:column;border-top:0;border-right:1px solid var(--line);height:calc(100vh - 60px);padding:12px;gap:4px}
+  .nav a{flex:none;flex-direction:row;justify-content:flex-start;gap:10px;min-height:44px;padding:0 12px;border-radius:10px;font-size:1rem}
+  .nav a[aria-current="page"]{box-shadow:none;background:var(--tint)}
+  main{padding-bottom:40px;width:100%}
+}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 16px}
+.card-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.card-head h2{margin:0}
+.banner{display:flex;gap:10px;align-items:flex-start;background:var(--tint);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:16px;font-size:.9rem}
+.banner p{margin:0;flex:1}
+
+.btn{font:inherit;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+.btn:hover{border-color:var(--brand)}
+.btn.primary{background:var(--brand);color:var(--on-brand);border-color:var(--brand);font-weight:700}
+.btn.danger{color:var(--danger)}
+.btn.sm{min-height:40px;padding:0 12px;font-size:.9rem}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;min-height:40px;padding:0 12px;border:0;background:var(--card);color:var(--text);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--on-brand);font-weight:700}
+
+.field{margin:0 0 14px}
+label,legend{font-weight:600;display:block;margin-bottom:4px}
+.hint{font-weight:400;color:var(--muted);font-size:.85rem;margin:2px 0 0}
+input,select,textarea{font:inherit;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--muted);border-radius:10px;background:var(--card);color:var(--text)}
+input[aria-invalid="true"],select[aria-invalid="true"]{border-color:var(--danger);border-width:2px}
+input[type=radio]{width:auto;min-height:0;margin-right:8px;transform:scale(1.2)}
+fieldset{border:0;padding:0;margin:0 0 14px}
+.radio{display:flex;align-items:center;min-height:44px;font-weight:400;margin:0}
+.error{color:var(--danger);font-size:.9rem;margin:4px 0 0;font-weight:600}
+.error::before{content:"⚠ "}
+.err-summary{background:var(--tint);border:2px solid var(--danger);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-weight:600}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.filters .wide{grid-column:1/-1}
+.filters .field{margin:0}
+@media(min-width:900px){.filters{grid-template-columns:2fr 1fr 1fr 1fr}.filters .wide{grid-column:auto}}
+
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(min-width:900px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi-label{color:var(--muted);font-size:.85rem}
+.kpi-val{font-size:1.25rem;font-weight:800;overflow-wrap:anywhere}
+.sale{color:var(--sale)}.exp{color:var(--exp)}.neg{color:var(--danger)}
+
+.list{list-style:none;margin:0;padding:0}
+.txn{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.txn:last-child{border-bottom:0}
+.txn-amt{font-weight:800;text-align:right;white-space:nowrap}
+.txn-actions{grid-column:1/-1;display:flex;gap:8px}
+.badge{display:inline-block;font-size:.75rem;font-weight:700;border:1px solid currentColor;border-radius:999px;padding:0 8px;margin-right:6px}
+.note{color:var(--muted)}
+.empty{color:var(--muted);padding:12px 0}
+
+svg.chart{width:100%;height:auto;display:block}
+.grid{stroke:var(--line);stroke-width:1}
+.axis{fill:var(--muted);font-size:11px}
+.bar.sales{fill:var(--sale)}.bar.expenses{fill:var(--exp)}
+.hit{fill:transparent}
+.grp{cursor:pointer}
+.grp:hover .hit,.grp.sel .hit{fill:var(--tint)}
+.grp:focus{outline:none}
+.grp:focus-visible .hit{stroke:var(--focus);stroke-width:2}
+.legend{display:flex;gap:16px;font-size:.9rem;margin-top:4px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.dot.sales{background:var(--sale)}.dot.expenses{background:var(--exp)}
+.tip{min-height:1.5em;font-weight:600;margin:8px 0}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+td.num,th.num{text-align:right;white-space:nowrap}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600}
+
+dialog{border:0;border-radius:16px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);background:var(--card);color:var(--text)}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+dialog form{padding:20px;max-height:calc(100dvh - 24px);overflow:auto}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));max-width:min(92vw,520px);background:#14211f;color:#fff;padding:10px 16px;border-radius:12px;z-index:200;font-weight:600}
+#toast.error{background:#991b1b}
+#toast[hidden]{display:none}
+@media(min-width:900px){#toast{bottom:24px}}
+
+.report h2{font-size:1.3rem}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+@media print{
+  @page{margin:12mm}
+  body{background:#fff;color:#000}
+  .topbar,.nav,#filtersCard,.noprint,#toast,.banner,.skip{display:none!important}
+  .app{display:block}
+  main{padding:0;max-width:none}
+  .card{border:0;padding:0}
+  :root{--sale:#0f766e;--exp:#b45309;--line:#999;--muted:#333;--text:#000}
+  th,td{border-bottom:1px solid #999}
+}
+</style>
+</head>
+<body>
+<a class="skip" id="skip" href="#main">Skip to content</a>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">Ledgerly<small id="bizLabel"></small></div>
+    <div class="spacer"></div>
+    <button type="button" class="btn" id="btnInstall" hidden>Install app</button>
+    <button type="button" class="btn primary" id="btnAdd">+ Add entry</button>
+  </header>
+
+  <nav class="nav" aria-label="Main">
+    <a href="#dashboard" data-view="dashboard"><span aria-hidden="true">📊</span><span>Dashboard</span></a>
+    <a href="#transactions" data-view="transactions"><span aria-hidden="true">🧾</span><span>Entries</span></a>
+    <a href="#directory" data-view="directory"><span aria-hidden="true">👥</span><span>Directory</span></a>
+    <a href="#reports" data-view="reports"><span aria-hidden="true">🖨️</span><span>Reports</span></a>
+  </nav>
+
+  <main id="main" tabindex="-1">
+    <div class="banner" id="banner">
+      <p id="bannerText"></p>
+      <button type="button" class="btn sm" id="bannerClose">Dismiss</button>
+    </div>
+
+    <form class="card" id="filtersCard" aria-label="Search and date filters" novalidate>
+      <div class="filters">
+        <div class="field wide"><label for="fQ">Search</label>
+          <input id="fQ" type="search" placeholder="Party, category, note, amount" autocomplete="off" maxlength="80"></div>
+        <div class="field"><label for="fType">Show</label>
+          <select id="fType"><option value="all">Sales and expenses</option><option value="sale">Sales only</option><option value="expense">Expenses only</option></select></div>
+        <div class="field"><label for="fFrom">From date</label><input id="fFrom" type="date"></div>
+        <div class="field"><label for="fTo">To date</label><input id="fTo" type="date"></div>
+      </div>
+      <p class="error" id="filterError" role="alert" hidden></p>
+      <div class="row" style="margin-top:10px" role="group" aria-label="Quick date ranges">
+        <button type="button" class="btn sm" data-preset="month">This month</button>
+        <button type="button" class="btn sm" data-preset="30">Last 30 days</button>
+        <button type="button" class="btn sm" data-preset="fy">This financial year (Apr–Mar)</button>
+        <button type="button" class="btn sm" data-preset="all">All dates</button>
+      </div>
+    </form>
+
+    <section id="view-dashboard" aria-labelledby="h-dashboard" hidden>
+      <h1 id="h-dashboard" tabindex="-1">Dashboard</h1>
+      <p class="muted" id="rangeText"></p>
+      <div class="kpis" id="kpis"></div>
+      <div class="card">
+        <div class="card-head"><h2>Monthly sales and expenses</h2>
+          <div class="seg" role="group" aria-label="Chart series">
+            <button type="button" data-mode="both" aria-pressed="true">Both</button>
+            <button type="button" data-mode="sales" aria-pressed="false">Sales</button>
+            <button type="button" data-mode="expenses" aria-pressed="false">Expenses</button>
+          </div></div>
+        <div id="chart"></div>
+        <p class="tip" id="chartTip" aria-live="polite"></p>
+        <details><summary>View chart data as a table</summary><div class="table-wrap" id="chartTable"></div></details>
+      </div>
+      <div class="card"><h2>Latest entries</h2><ul class="list" id="recent"></ul><p><a href="#transactions">See all entries</a></p></div>
+    </section>
+
+    <section id="view-transactions" aria-labelledby="h-transactions" hidden>
+      <h1 id="h-transactions" tabindex="-1">Sales and expenses</h1>
+      <div class="row" style="margin-bottom:12px"><button type="button" class="btn primary" id="btnAddTxn">+ Add entry</button><span class="muted" id="txnCount"></span></div>
+      <div class="card"><ul class="list" id="txnList"></ul></div>
+    </section>
+
+    <section id="view-directory" aria-labelledby="h-directory" hidden>
+      <h1 id="h-directory" tabindex="-1">Customers and suppliers</h1>
+      <div class="card">
+        <div class="row" style="margin-bottom:12px">
+          <button type="button" class="btn primary" id="btnAddParty">+ Add customer or supplier</button>
+          <div class="seg" role="group" aria-label="Directory type">
+            <button type="button" data-pk="all" aria-pressed="true">All</button>
+            <button type="button" data-pk="customer" aria-pressed="false">Customers</button>
+            <button type="button" data-pk="supplier" aria-pressed="false">Suppliers</button>
+          </div>
+        </div>
+        <div class="field"><label for="pQ">Search directory</label><input id="pQ" type="search" placeholder="Name, city, phone" autocomplete="off" maxlength="80"></div>
+        <ul class="list" id="partyList"></ul>
+      </div>
+    </section>
+
+    <section id="view-reports" aria-labelledby="h-reports" hidden>
+      <h1 id="h-reports" tabindex="-1">Reports</h1>
+      <div class="card noprint">
+        <div class="field"><label for="bizName">Business name (shown on reports)</label><input id="bizName" maxlength="80" autocomplete="organization"></div>
+        <div class="row">
+          <button type="button" class="btn primary" id="btnCsv">Export CSV (opens in Excel)</button>
+          <button type="button" class="btn" id="btnPrint">Print / Save as PDF</button>
+        </div>
+        <p class="hint">Reports use the search and date filters above. On a phone, choose “Save as PDF” in the print screen.</p>
+      </div>
+      <article class="card report" id="report" aria-label="Printable report"></article>
+      <details class="card noprint"><summary>Data on this device (backup, restore, reset)</summary>
+        <p class="muted small">This prototype keeps data only in this browser. Clearing browser data deletes it. Download a backup regularly.</p>
+        <div class="row">
+          <button type="button" class="btn" id="btnBackup">Download backup (JSON)</button>
+          <button type="button" class="btn" id="btnSample">Reset to sample data</button>
+          <button type="button" class="btn danger" id="btnWipe">Delete all data</button>
+        </div>
+        <div class="field" style="margin-top:12px"><label for="restoreFile">Restore from a Ledgerly backup file</label><input id="restoreFile" type="file" accept=".json,application/json"></div>
+      </details>
+    </section>
+  </main>
+</div>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<dialog id="txnDialog" aria-labelledby="txnTitle">
+  <form id="txnForm" novalidate>
+    <h2 id="txnTitle">Add entry</h2>
+    <div class="err-summary" id="txnSummary" role="alert" hidden></div>
+    <fieldset><legend>Entry type</legend>
+      <label class="radio"><input type="radio" name="etype" value="sale" checked> Sale (money in)</label>
+      <label class="radio"><input type="radio" name="etype" value="expense"> Expense (money out)</label>
+    </fieldset>
+    <div class="field"><label for="tDate">Date (required)</label>
+      <input id="tDate" name="date" type="date" required aria-describedby="tDate-err"><p class="error" id="tDate-err" hidden></p></div>
+    <div class="field"><label for="tAmount">Amount in ₹ (required)</label>
+      <input id="tAmount" name="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 2500 or 2500.50" required aria-describedby="tAmount-hint tAmount-err">
+      <p class="hint" id="tAmount-hint">Numbers only, up to 2 decimal places. Do not type commas or ₹.</p><p class="error" id="tAmount-err" hidden></p></div>
+    <div class="field"><label for="tParty" id="tPartyLabel">Customer</label>
+      <select id="tParty" name="party" aria-describedby="tParty-err"></select><p class="error" id="tParty-err" hidden></p></div>
+    <div class="field"><label for="tCat">Category (required)</label>
+      <select id="tCat" name="category" required aria-describedby="tCat-err"></select><p class="error" id="tCat-err" hidden></p></div>
+    <div class="field"><label for="tMode">Payment mode</label>
+      <select id="tMode" name="mode" aria-describedby="tMode-err"></select><p class="error" id="tMode-err" hidden></p></div>
+    <div class="field"><label for="tNote">Note (optional)</label>
+      <input id="tNote" name="note" maxlength="200" aria-describedby="tNote-err"><p class="error" id="tNote-err" hidden></p></div>
+    <div class="dlg-actions"><button type="button" class="btn" id="txnCancel">Cancel</button><button type="submit" class="btn primary">Save entry</button></div>
+  </form>
+</dialog>
+
+<dialog id="partyDialog" aria-labelledby="partyTitle">
+  <form id="partyForm" novalidate>
+    <h2 id="partyTitle">Add customer or supplier</h2>
+    <div class="err-summary" id="partySummary" role="alert" hidden></div>
+    <fieldset><legend>Type</legend>
+      <label class="radio"><input type="radio" name="kind" value="customer" checked> Customer</label>
+      <label class="radio"><input type="radio" name="kind" value="supplier"> Supplier</label>
+      <p class="hint" id="kindHint" hidden>The type cannot be changed after the person or business is created.</p>
+    </fieldset>
+    <div class="field"><label for="pName">Name (required)</label>
+      <input id="pName" name="name" maxlength="80" autocomplete="off" required aria-describedby="pName-err"><p class="error" id="pName-err" hidden></p></div>
+    <div class="field"><label for="pPhone">Mobile number (optional)</label>
+      <input id="pPhone" name="phone" type="tel" inputmode="tel" autocomplete="off" aria-describedby="pPhone-hint pPhone-err">
+      <p class="hint" id="pPhone-hint">10-digit Indian mobile number. +91 is fine.</p><p class="error" id="pPhone-err" hidden></p></div>
+    <div class="field"><label for="pGstin">GSTIN (optional)</label>
+      <input id="pGstin" name="gstin" maxlength="15" autocomplete="off" aria-describedby="pGstin-hint pGstin-err">
+      <p class="hint" id="pGstin-hint">15 characters. Only the format is checked, not whether it is real.</p><p class="error" id="pGstin-err" hidden></p></div>
+    <div class="field"><label for="pCity">City (optional)</label>
+      <input id="pCity" name="city" maxlength="60" aria-describedby="pCity-err"><p class="error" id="pCity-err" hidden></p></div>
+    <div class="field"><label for="pNote">Note (optional)</label>
+      <input id="pNote" name="note" maxlength="200" aria-describedby="pNote-err"><p class="error" id="pNote-err" hidden></p></div>
+    <div class="dlg-actions"><button type="button" class="btn" id="partyCancel">Cancel</button><button type="submit" class="btn primary">Save</button></div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+'use strict';
+
+/* ---------- Small helpers ---------- */
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+const STORE_KEY = 'ledgerly.v1';
+const MAX_PAISE = 999999999999;           // ₹9,99,99,99,999.99
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const SALE_CATS = ['Product sales','Services','Other income'];
+const EXP_CATS = ['Raw materials','Rent','Salaries & wages','Electricity & utilities','Transport','Marketing','Taxes & fees','Repairs & maintenance','Other expense'];
+const MODES = ['Cash','UPI','Bank transfer','Cheque','Card','Other'];
+const VIEWS = ['dashboard','transactions','directory','reports'];
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+const pad = n => String(n).padStart(2, '0');
+const isoOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const todayISO = () => isoOf(new Date());
+function isRealDate(s) {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const p = s.split('-').map(Number), d = new Date(p[0], p[1] - 1, p[2]);
+  return d.getFullYear() === p[0] && d.getMonth() === p[1] - 1 && d.getDate() === p[2];
+}
+function fmtDate(s) { const p = s.split('-').map(Number); return p[2] + ' ' + MONTHS[p[1] - 1] + ' ' + p[0]; }
+function monthLabel(k) { const p = k.split('-').map(Number); return MONTHS[p[1] - 1] + ' ' + p[0]; }
+function shortMonth(k) { const p = k.split('-').map(Number); return MONTHS[p[1] - 1] + " '" + String(p[0]).slice(2); }
+
+const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtINR = p => inr.format(p / 100);
+function fmtCompact(p) {
+  const r = Math.abs(p) / 100; let s;
+  if (r >= 1e7) s = (r / 1e7).toFixed(r >= 1e8 ? 0 : 1).replace(/\.0$/, '') + ' Cr';
+  else if (r >= 1e5) s = (r / 1e5).toFixed(1).replace(/\.0$/, '') + ' L';
+  else if (r >= 1e3) s = (r / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  else s = String(Math.round(r));
+  return (p < 0 ? '-' : '') + '₹' + s;
+}
+// "2500" or "2500.5" -> paise (integer) or null if invalid. Money is kept in paise to avoid rounding errors.
+function parseRupees(str) {
+  const s = String(str).trim().replace(/[₹,\s]/g, '');
+  if (!/^\d{1,10}(\.\d{1,2})?$/.test(s)) return null;
+  const parts = s.split('.');
+  return parseInt(parts[0], 10) * 100 + parseInt(((parts[1] || '') + '00').slice(0, 2), 10);
+}
+const byName = (a, b) => a.name.localeCompare(b.name);
+
+/* ---------- Data: validation, storage, sample data ---------- */
+function str(v, max, name, req) {
+  if (v == null || v === '') { if (req) throw new Error(name + ' is missing.'); return ''; }
+  if (typeof v !== 'string') throw new Error(name + ' must be text.');
+  const s = v.trim();
+  if (req && !s) throw new Error(name + ' is missing.');
+  if (s.length > max) throw new Error(name + ' is too long.');
+  return s;
+}
+function sanitize(raw) {
+  const d = raw && typeof raw === 'object' ? (raw.data || raw) : null;
+  if (!d || !Array.isArray(d.parties) || !Array.isArray(d.txns)) throw new Error('This is not a Ledgerly backup file.');
+  if (d.parties.length > 20000 || d.txns.length > 100000) throw new Error('The file has too many records.');
+  const ids = new Set();
+  const parties = d.parties.map((p, i) => {
+    const w = 'Customer/supplier #' + (i + 1);
+    if (!p || typeof p !== 'object') throw new Error(w + ' is invalid.');
+    const id = str(p.id, 64, w + ' id', true);
+    if (ids.has(id)) throw new Error(w + ' has a duplicate id.');
+    ids.add(id);
+    if (p.kind !== 'customer' && p.kind !== 'supplier') throw new Error(w + ' has an invalid type.');
+    return { id: id, kind: p.kind, name: str(p.name, 80, w + ' name', true), phone: str(p.phone, 15, w + ' phone'),
+      gstin: str(p.gstin, 15, w + ' GSTIN').toUpperCase(), city: str(p.city, 60, w + ' city'), note: str(p.note, 200, w + ' note') };
+  });
+  const tids = new Set();
+  const txns = d.txns.map((t, i) => {
+    const w = 'Entry #' + (i + 1);
+    if (!t || typeof t !== 'object') throw new Error(w + ' is invalid.');
+    const id = str(t.id, 64, w + ' id', true);
+    if (tids.has(id)) throw new Error(w + ' has a duplicate id.');
+    tids.add(id);
+    if (t.type !== 'sale' && t.type !== 'expense') throw new Error(w + ' has an invalid type.');
+    if (!Number.isInteger(t.paise) || t.paise < 1 || t.paise > MAX_PAISE) throw new Error(w + ' has an invalid amount.');
+    const date = str(t.date, 10, w + ' date', true);
+    if (!isRealDate(date)) throw new Error(w + ' has an invalid date.');
+    let partyId = t.partyId ? str(t.partyId, 64, w + ' party') : null;
+    if (partyId && !ids.has(partyId)) partyId = null;
+    return { id: id, type: t.type, date: date, paise: t.paise, partyId: partyId, partyName: str(t.partyName, 80, w + ' party name'),
+      category: str(t.category, 40, w + ' category', true), mode: str(t.mode, 20, w + ' payment mode', true),
+      note: str(t.note, 200, w + ' note'), ts: Number.isInteger(t.ts) ? t.ts : 0 };
+  });
+  return { version: 1, business: str(d.business, 80, 'Business name') || 'My Business', parties: parties, txns: txns };
+}
+function sampleData() {
+  let seed = 7;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const mk = (name, kind, phone, gstin, city, note) => ({ id: uid(), kind: kind, name: name, phone: phone, gstin: gstin, city: city, note: note });
+  const parties = [
+    mk('Sharma Traders', 'customer', '9876543210', '33ABCDE1234F1Z5', 'Coimbatore', 'Sample: regular wholesale buyer'),
+    mk('Lakshmi Stores', 'customer', '9845012345', '', 'Tiruppur', 'Sample customer'),
+    mk('Ravi Enterprises', 'customer', '9790011223', '', 'Erode', 'Sample customer'),
+    mk('Priya Boutique', 'customer', '', '', 'Salem', 'Sample customer'),
+    mk('Kumar Transport', 'supplier', '9944001122', '', 'Coimbatore', 'Sample supplier'),
+    mk('Sri Murugan Packaging', 'supplier', '9655012345', '', 'Coimbatore', 'Sample supplier'),
+    mk('Metro Steel Suppliers', 'supplier', '', '33PQRSX5678L1Z2', 'Chennai', 'Sample supplier')
+  ];
+  const cust = parties.filter(p => p.kind === 'customer'), sup = parties.filter(p => p.kind === 'supplier');
+  const now = new Date(), txns = [];
+  const add = (type, date, rupees, party, category) => {
+    txns.push({ id: uid(), type: type, date: date, paise: rupees * 100, partyId: party ? party.id : null, partyName: party ? party.name : '',
+      category: category, mode: MODES[Math.floor(rnd() * 5)], note: '', ts: txns.length });
+  };
+  for (let i = 5; i >= 0; i--) {
+    const y = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const day = n => { const dt = new Date(y.getFullYear(), y.getMonth(), n); return dt > now ? null : isoOf(dt); };
+    for (let k = 0; k < 7; k++) {
+      const dt = day(2 + k * 3); if (!dt) continue;
+      add('sale', dt, Math.round((4000 + rnd() * 26000) / 50) * 50, cust[Math.floor(rnd() * cust.length)], k % 3 === 2 ? 'Services' : 'Product sales');
+    }
+    const rent = day(1); if (rent) add('expense', rent, 18000, null, 'Rent');
+    ['Raw materials', 'Transport', 'Electricity & utilities', 'Salaries & wages', 'Marketing'].forEach((c, k) => {
+      const dt = day(4 + k * 5); if (!dt) return;
+      const amt = c === 'Salaries & wages' ? 24000 : Math.round((1500 + rnd() * 12000) / 50) * 50;
+      add('expense', dt, amt, c === 'Raw materials' ? sup[2] : c === 'Transport' ? sup[0] : null, c);
+    });
+  }
+  return { version: 1, business: 'My Business', parties: parties, txns: txns };
+}
+
+let db = null, storageOK = true, startupMsg = '';
+function testStorage() { try { localStorage.setItem('__ledgerly_t', '1'); localStorage.removeItem('__ledgerly_t'); return true; } catch (e) { return false; } }
+function loadDB() {
+  let raw = null;
+  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { raw = null; }
+  if (raw) {
+    try { return { data: sanitize(JSON.parse(raw)), fresh: false }; }
+    catch (e) {
+      try { localStorage.setItem(STORE_KEY + '.corrupt', raw); } catch (_) {}
+      startupMsg = 'Saved data could not be read, so sample data was loaded. A copy of the unreadable data was kept in this browser.';
+    }
+  }
+  return { data: sampleData(), fresh: true };
+}
+function saveDB() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); return true; }
+  catch (e) { toast('Could not save: browser storage is full or blocked. Download a backup now.', 'error'); return false; }
+}
+
+/* ---------- UI state ---------- */
+let currentView = 'dashboard', filters = { q: '', type: 'all', from: '', to: '' };
+let chartMode = 'both', chartSelKey = null, chartData = [];
+let partyKind = 'all', editingTxn = null, editingParty = null, lastFocus = null, toastTimer = null;
+
+function toast(msg, kind) {
+  const t = $('#toast'); t.textContent = msg; t.className = kind === 'error' ? 'error' : '';
+  t.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite'); t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 5000);
+}
+
+/* ---------- Filtering and totals ---------- */
+function rangeValid() { return !(filters.from && filters.to && filters.from > filters.to); }
+function getFiltered() {
+  const q = filters.q.trim().toLowerCase(), ok = rangeValid();
+  const from = ok ? filters.from : '', to = ok ? filters.to : '';
+  return db.txns.filter(t => {
+    if (filters.type !== 'all' && t.type !== filters.type) return false;
+    if (from && t.date < from) return false;
+    if (to && t.date > to) return false;
+    if (q) {
+      const hay = [t.note, t.partyName, t.category, t.mode, (t.paise / 100).toFixed(2), String(t.paise / 100)].join(' ').toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  }).sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.ts - a.ts);
+}
+function totals(list) {
+  let s = 0, e = 0;
+  list.forEach(t => { if (t.type === 'sale') s += t.paise; else e += t.paise; });
+  return { sales: s, expenses: e, net: s - e, count: list.length };
+}
+function monthlyTotals(list) {
+  const map = new Map();
+  list.forEach(t => {
+    const k = t.date.slice(0, 7); let o = map.get(k);
+    if (!o) { o = { key: k, sales: 0, expenses: 0 }; map.set(k, o); }
+    if (t.type === 'sale') o.sales += t.paise; else o.expenses += t.paise;
+  });
+  const arr = Array.from(map.values()).sort((a, b) => a.key < b.key ? -1 : 1);
+  if (!arr.length) return [];
+  const out = []; let p = arr[0].key.split('-').map(Number), y = p[0], m = p[1];
+  const e = arr[arr.length - 1].key.split('-').map(Number);
+  while (y < e[0] || (y === e[0] && m <= e[1])) {
+    const k = y + '-' + pad(m); out.push(map.get(k) || { key: k, sales: 0, expenses: 0 });
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  return out;
+}
+function rangeText() {
+  let s = !rangeValid() ? 'All dates (the date range is invalid)' :
+    filters.from && filters.to ? fmtDate(filters.from) + ' to ' + fmtDate(filters.to) :
+    filters.from ? 'From ' + fmtDate(filters.from) : filters.to ? 'Up to ' + fmtDate(filters.to) : 'All dates';
+  if (filters.type !== 'all') s += ' · ' + (filters.type === 'sale' ? 'Sales only' : 'Expenses only');
+  if (filters.q.trim()) s += ' · Search: “' + filters.q.trim() + '”';
+  return s;
+}
+
+/* ---------- Rendering ---------- */
+function txnItem(t, actions) {
+  const sale = t.type === 'sale', cls = sale ? 'sale' : 'exp';
+  const who = t.partyName ? esc(t.partyName) : (sale ? 'Walk-in' : 'No supplier');
+  const ctx = esc(t.category) + ' on ' + fmtDate(t.date);
+  return '<li class="txn"><div><div><span class="badge ' + cls + '">' + (sale ? 'Sale' : 'Expense') + '</span><strong>' + esc(t.category) + '</strong></div>' +
+    '<div class="muted small">' + fmtDate(t.date) + ' · ' + who + ' · ' + esc(t.mode) + '</div>' +
+    (t.note ? '<div class="small note">' + esc(t.note) + '</div>' : '') + '</div>' +
+    '<div class="txn-amt ' + cls + '"><span class="sr">' + (sale ? 'Money in: ' : 'Money out: ') + '</span>' + (sale ? '+' : '−') + ' ' + fmtINR(t.paise) + '</div>' +
+    (actions ? '<div class="txn-actions"><button type="button" class="btn sm" data-act="edit" data-id="' + esc(t.id) + '">Edit<span class="sr"> ' + ctx + '</span></button>' +
+      '<button type="button" class="btn sm danger" data-act="del" data-id="' + esc(t.id) + '">Delete<span class="sr"> ' + ctx + '</span></button></div>' : '') + '</li>';
+}
+function renderFilterInfo() {
+  const err = $('#filterError');
+  if (!rangeValid()) { err.textContent = 'The “From” date must be on or before the “To” date. Date filters are ignored until this is fixed.'; err.hidden = false; }
+  else { err.hidden = true; err.textContent = ''; }
+  $('#bizLabel').textContent = db.business;
+}
+function renderDashboard() {
+  const list = getFiltered(), t = totals(list);
+  $('#rangeText').textContent = rangeText();
+  $('#kpis').innerHTML =
+    '<div class="kpi"><div class="kpi-label">Total sales</div><div class="kpi-val sale">' + fmtINR(t.sales) + '</div></div>' +
+    '<div class="kpi"><div class="kpi-label">Total expenses</div><div class="kpi-val exp">' + fmtINR(t.expenses) + '</div></div>' +
+    '<div class="kpi"><div class="kpi-label">Net result (' + (t.net >= 0 ? 'profit' : 'loss') + ')</div><div class="kpi-val ' + (t.net >= 0 ? 'sale' : 'neg') + '">' + fmtINR(t.net) + '</div></div>' +
+    '<div class="kpi"><div class="kpi-label">Transactions</div><div class="kpi-val">' + t.count + '</div></div>';
+  renderChart(list);
+  $('#recent').innerHTML = list.length ? list.slice(0, 5).map(x => txnItem(x, false)).join('') : '<li class="empty">No entries match the current filters.</li>';
+}
+function niceMax(p) {
+  const r = p / 100, mag = Math.pow(10, Math.floor(Math.log10(r)));
+  const c = [1, 2, 2.5, 5, 10].map(x => x * mag).find(x => x >= r);
+  return Math.round(c * 100);
+}
+function renderChart(list) {
+  const box = $('#chart');
+  chartData = monthlyTotals(list).slice(-12);
+  if (!chartData.length) { box.innerHTML = '<p class="empty">No data for the selected filters.</p>'; $('#chartTip').textContent = ''; $('#chartTable').innerHTML = ''; return; }
+  const W = 640, H = 300, L = 58, R = 10, T = 14, B = 40, iw = W - L - R, ih = H - T - B;
+  const series = chartMode === 'both' ? ['sales', 'expenses'] : [chartMode];
+  const maxV = niceMax(Math.max(1, Math.max.apply(null, chartData.map(d => Math.max.apply(null, series.map(s => d[s])))) ));
+  const gw = iw / chartData.length, bw = Math.min(28, gw * (series.length === 2 ? 0.36 : 0.6));
+  if (!chartSelKey || !chartData.some(d => d.key === chartSelKey)) chartSelKey = chartData[chartData.length - 1].key;
+  let g = '';
+  for (let i = 0; i <= 4; i++) {
+    const y = T + ih - ih * i / 4;
+    g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '"/><text class="axis" x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end">' + fmtCompact(maxV * i / 4) + '</text>';
+  }
+  chartData.forEach((d, i) => {
+    const cx = L + gw * i + gw / 2; let bars = '';
+    series.forEach((s, j) => {
+      const h = ih * d[s] / maxV, x = cx - series.length * bw / 2 + j * bw;
+      bars += '<rect class="bar ' + s + '" x="' + x.toFixed(1) + '" y="' + (T + ih - h).toFixed(1) + '" width="' + (bw - 1).toFixed(1) + '" height="' + (d[s] > 0 ? Math.max(h, 1) : 0).toFixed(1) + '" rx="3"/>';
+    });
+    g += '<g class="grp' + (d.key === chartSelKey ? ' sel' : '') + '" data-key="' + d.key + '" tabindex="0" role="button" aria-label="' + esc(tipText(d)) + '">' +
+      '<rect class="hit" x="' + (L + gw * i).toFixed(1) + '" y="' + T + '" width="' + gw.toFixed(1) + '" height="' + (ih + B) + '"/>' + bars +
+      '<text class="axis" x="' + cx.toFixed(1) + '" y="' + (H - 16) + '" text-anchor="middle">' + esc(shortMonth(d.key)) + '</text></g>';
+  });
+  box.innerHTML = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="Monthly sales and expenses bar chart">' + g + '</svg>' +
+    '<div class="legend">' + (series.indexOf('sales') > -1 ? '<span><span class="dot sales"></span>Sales</span>' : '') + (series.indexOf('expenses') > -1 ? '<span><span class="dot expenses"></span>Expenses</span>' : '') + '</div>';
+  $('#chartTable').innerHTML = '<table><thead><tr><th>Month</th><th class="num">Sales</th><th class="num">Expenses</th><th class="num">Net</th></tr></thead><tbody>' +
+    chartData.map(d => '<tr><td>' + esc(monthLabel(d.key)) + '</td><td class="num">' + fmtINR(d.sales) + '</td><td class="num">' + fmtINR(d.expenses) + '</td><td class="num">' + fmtINR(d.sales - d.expenses) + '</td></tr>').join('') + '</tbody></table>';
+  showTip(chartSelKey);
+}
+function tipText(d) { return monthLabel(d.key) + ': Sales ' + fmtINR(d.sales) + ', Expenses ' + fmtINR(d.expenses) + ', Net ' + fmtINR(d.sales - d.expenses); }
+function showTip(key) {
+  const d = chartData.find(x => x.key === key); if (!d) return;
+  chartSelKey = key; $('#chartTip').textContent = tipText(d);
+  $$('#chart .grp').forEach(g => g.classList.toggle('sel', g.dataset.key === key));
+}
+function renderTransactions() {
+  const list = getFiltered(), CAP = 300;
+  $('#txnCount').textContent = list.length + (list.length === 1 ? ' entry' : ' entries') + (list.length > CAP ? ' (showing the latest ' + CAP + ')' : '');
+  $('#txnList').innerHTML = list.length ? list.slice(0, CAP).map(t => txnItem(t, true)).join('') : '<li class="empty">No entries match the current filters. Use “Add entry” to create one.</li>';
+}
+function renderDirectory() {
+  const q = $('#pQ').value.trim().toLowerCase(), sums = {};
+  db.txns.forEach(t => { if (t.partyId) { const o = sums[t.partyId] || (sums[t.partyId] = { p: 0, n: 0 }); o.p += t.paise; o.n++; } });
+  const list = db.parties.filter(p => (partyKind === 'all' || p.kind === partyKind) &&
+    (!q || [p.name, p.city, p.phone, p.gstin, p.note].join(' ').toLowerCase().indexOf(q) > -1)).sort(byName);
+  $('#partyList').innerHTML = list.length ? list.map(p => {
+    const s = sums[p.id] || { p: 0, n: 0 }, cust = p.kind === 'customer';
+    return '<li class="txn"><div><div><span class="badge ' + (cust ? 'sale' : 'exp') + '">' + (cust ? 'Customer' : 'Supplier') + '</span><strong>' + esc(p.name) + '</strong></div>' +
+      '<div class="muted small">' + [p.city ? esc(p.city) : '', p.phone ? '<a href="tel:' + esc(p.phone) + '">' + esc(p.phone) + '</a>' : '', p.gstin ? 'GSTIN ' + esc(p.gstin) : ''].filter(Boolean).join(' · ') + '</div>' +
+      (p.note ? '<div class="small note">' + esc(p.note) + '</div>' : '') + '</div>' +
+      '<div class="txn-amt ' + (cust ? 'sale' : 'exp') + '"><span class="small muted">' + (cust ? 'Total sales' : 'Total expenses') + '</span><br>' + fmtINR(s.p) + '<br><span class="small muted">' + s.n + ' entries</span></div>' +
+      '<div class="txn-actions"><button type="button" class="btn sm" data-act="pedit" data-id="' + esc(p.id) + '">Edit<span class="sr"> ' + esc(p.name) + '</span></button>' +
+      '<button type="button" class="btn sm danger" data-act="pdel" data-id="' + esc(p.id) + '">Delete<span class="sr"> ' + esc(p.name) + '</span></button></div></li>';
+  }).join('') : '<li class="empty">No customers or suppliers found. Use “Add customer or supplier”.</li>';
+}
+function renderReport() {
+  const list = getFiltered(), t = totals(list), months = monthlyTotals(list);
+  $('#bizName').value === db.business || ($('#bizName').value = db.business);
+  $('#report').innerHTML =
+    '<h2>' + esc(db.business) + '</h2><p><strong>Sales and expenses report</strong><br>Period: ' + esc(rangeText()) + '<br>Generated on: ' + fmtDate(todayISO()) + '</p>' +
+    '<div class="table-wrap"><table><caption class="sr">Summary</caption><tbody>' +
+    '<tr><th scope="row">Total sales</th><td class="num">' + fmtINR(t.sales) + '</td></tr>' +
+    '<tr><th scope="row">Total expenses</th><td class="num">' + fmtINR(t.expenses) + '</td></tr>' +
+    '<tr><th scope="row">Net result (' + (t.net >= 0 ? 'profit' : 'loss') + ')</th><td class="num">' + fmtINR(t.net) + '</td></tr>' +
+    '<tr><th scope="row">Number of entries</th><td class="num">' + t.count + '</td></tr></tbody></table></div>' +
+    (months.length ? '<h3>Month by month</h3><div class="table-wrap"><table><thead><tr><th>Month</th><th class="num">Sales</th><th class="num">Expenses</th><th class="num">Net</th></tr></thead><tbody>' +
+      months.map(d => '<tr><td>' + esc(monthLabel(d.key)) + '</td><td class="num">' + fmtINR(d.sales) + '</td><td class="num">' + fmtINR(d.expenses) + '</td><td class="num">' + fmtINR(d.sales - d.expenses) + '</td></tr>').join('') + '</tbody></table></div>' : '') +
+    '<h3>All entries</h3>' + (list.length ? '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Party</th><th>Mode</th><th class="num">Amount</th><th>Note</th></tr></thead><tbody>' +
+      list.map(x => '<tr><td>' + fmtDate(x.date) + '</td><td>' + (x.type === 'sale' ? 'Sale' : 'Expense') + '</td><td>' + esc(x.category) + '</td><td>' + esc(x.partyName) + '</td><td>' + esc(x.mode) + '</td><td class="num">' + fmtINR(x.paise) + '</td><td>' + esc(x.note) + '</td></tr>').join('') + '</tbody></table></div>' : '<p class="empty">No entries match the current filters.</p>') +
+    '<p class="muted small">Prepared from data stored in the Ledgerly prototype on this device. This is not an audited statement or a GST return.</p>';
+}
+function renderAll() {
+  renderFilterInfo();
+  if (currentView === 'dashboard') renderDashboard();
+  else if (currentView === 'transactions') renderTransactions();
+  else if (currentView === 'directory') renderDirectory();
+  else renderReport();
+}
+
+/* ---------- Routing ---------- */
+function route(moveFocus) {
+  let v = location.hash.replace('#', '');
+  if (VIEWS.indexOf(v) === -1) v = 'dashboard';
+  currentView = v;
+  VIEWS.forEach(n => { $('#view-' + n).hidden = n !== v; });
+  $$('.nav a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  $('#filtersCard').hidden = v === 'directory';
+  renderAll();
+  if (moveFocus) $('#h-' + v).focus();
+}
+
+/* ---------- Forms: errors ---------- */
+function setOptions(sel, pairs, value) {
+  sel.innerHTML = pairs.map(p => '<option value="' + esc(p[0]) + '">' + esc(p[1]) + '</option>').join('');
+  sel.value = value;
+}
+function clearErrs(form) {
+  $$('.error', form).forEach(e => { e.hidden = true; e.textContent = ''; });
+  $$('[aria-invalid]', form).forEach(e => e.removeAttribute('aria-invalid'));
+  const s = $('.err-summary', form); s.hidden = true; s.textContent = '';
+}
+function showErrs(form, errs) {
+  errs.forEach(e => { const p = $('#' + e.el.id + '-err'); p.textContent = e.msg; p.hidden = false; e.el.setAttribute('aria-invalid', 'true'); });
+  const s = $('.err-summary', form);
+  s.textContent = 'Please fix ' + errs.length + (errs.length === 1 ? ' problem' : ' problems') + ' below.'; s.hidden = false;
+  errs[0].el.focus();
+}
+function openDialog(d, opener) { lastFocus = opener || document.activeElement; d.showModal(); }
+function onDialogClosed() {
+  if (lastFocus && document.body.contains(lastFocus)) lastFocus.focus(); else $('#h-' + currentView).focus();
+}
+
+/* ---------- Entry (transaction) form ---------- */
+function refreshTxnSelects(sel) {
+  sel = sel || {};
+  const f = $('#txnForm'), type = f.elements.etype.value;
+  const cats = (type === 'sale' ? SALE_CATS : EXP_CATS).slice();
+  if (sel.category && cats.indexOf(sel.category) === -1) cats.push(sel.category);
+  setOptions($('#tCat'), cats.map(c => [c, c]), sel.category || cats[0]);
+  const modes = MODES.slice(), curMode = sel.mode || $('#tMode').value || 'Cash';
+  if (modes.indexOf(curMode) === -1) modes.push(curMode);
+  setOptions($('#tMode'), modes.map(m => [m, m]), curMode);
+  const kind = type === 'sale' ? 'customer' : 'supplier';
+  const opts = [['', type === 'sale' ? 'Walk-in / no customer' : 'No supplier']];
+  if (sel.keepName) opts.push(['__keep', sel.keepName + ' (no longer in directory)']);
+  db.parties.filter(p => p.kind === kind).sort(byName).forEach(p => opts.push([p.id, p.name]));
+  setOptions($('#tParty'), opts, sel.party != null ? sel.party : '');
+  $('#tPartyLabel').textContent = type === 'sale' ? 'Customer (optional)' : 'Supplier (optional)';
+}
+function openTxnDialog(id, opener) {
+  editingTxn = id || null;
+  const t = id ? db.txns.find(x => x.id === id) : null, f = $('#txnForm');
+  f.reset(); clearErrs(f);
+  $('#txnTitle').textContent = t ? 'Edit entry' : 'Add entry';
+  f.elements.etype.value = t ? t.type : 'sale';
+  f.elements.date.value = t ? t.date : todayISO();
+  $('#tDate').max = todayISO();
+  f.elements.amount.value = t ? (t.paise / 100).toFixed(2) : '';
+  refreshTxnSelects(t ? { category: t.category, mode: t.mode, party: t.partyId || (t.partyName ? '__keep' : ''), keepName: !t.partyId && t.partyName ? t.partyName : '' } : null);
+  f.elements.note.value = t ? t.note : '';
+  openDialog($('#txnDialog'), opener);
+}
+function submitTxn(e) {
+  e.preventDefault();
+  const f = e.target; clearErrs(f);
+  const errs = [], type = f.elements.etype.value, date = f.elements.date.value, amtStr = f.elements.amount.value;
+  const note = f.elements.note.value.trim(), partyVal = f.elements.party.value;
+  if (!date) errs.push({ el: $('#tDate'), msg: 'Choose a date.' });
+  else if (!isRealDate(date) || date < '2000-01-01') errs.push({ el: $('#tDate'), msg: 'Enter a valid date (not before 1 Jan 2000).' });
+  else if (date > todayISO()) errs.push({ el: $('#tDate'), msg: 'The date cannot be in the future.' });
+  let paise = null;
+  if (!amtStr.trim()) errs.push({ el: $('#tAmount'), msg: 'Enter the amount.' });
+  else {
+    paise = parseRupees(amtStr);
+    if (paise === null) errs.push({ el: $('#tAmount'), msg: 'Enter a valid amount such as 2500 or 2500.50 (numbers only, up to 2 decimals).' });
+    else if (paise === 0) errs.push({ el: $('#tAmount'), msg: 'The amount must be greater than zero.' });
+    else if (paise > MAX_PAISE) errs.push({ el: $('#tAmount'), msg: 'The amount cannot be more than ₹9,99,99,99,999.' });
+  }
+  const category = f.elements.category.value;
+  if (!category) errs.push({ el: $('#tCat'), msg: 'Choose a category.' });
+  if (note.length > 200) errs.push({ el: $('#tNote'), msg: 'The note can have at most 200 characters.' });
+  let party = null;
+  if (partyVal && partyVal !== '__keep') { party = db.parties.find(p => p.id === partyVal); if (!party) errs.push({ el: $('#tParty'), msg: 'Choose a person from the list.' }); }
+  if (errs.length) { showErrs(f, errs); return; }
+  const old = editingTxn ? db.txns.find(x => x.id === editingTxn) : null;
+  const rec = { type: type, date: date, paise: paise, category: category, mode: f.elements.mode.value, note: note,
+    partyId: party ? party.id : null, partyName: party ? party.name : (partyVal === '__keep' && old ? old.partyName : '') };
+  if (old) Object.assign(old, rec); else db.txns.push(Object.assign({ id: uid(), ts: Date.now() }, rec));
+  saveDB(); $('#txnDialog').close(); toast(old ? 'Entry updated.' : 'Entry added.'); renderAll();
+}
+
+/* ---------- Customer / supplier form ---------- */
+function openPartyDialog(id, opener) {
+  editingParty = id || null;
+  const p = id ? db.parties.find(x => x.id === id) : null, f = $('#partyForm');
+  f.reset(); clearErrs(f);
+  $('#partyTitle').textContent = p ? 'Edit customer or supplier' : 'Add customer or supplier';
+  f.elements.kind.value = p ? p.kind : (partyKind === 'supplier' ? 'supplier' : 'customer');
+  $$('input[name=kind]', f).forEach(r => { r.disabled = !!p; });
+  $('#kindHint').hidden = !p;
+  f.elements.name.value = p ? p.name : ''; f.elements.phone.value = p ? p.phone : '';
+  f.elements.gstin.value = p ? p.gstin : ''; f.elements.city.value = p ? p.city : ''; f.elements.note.value = p ? p.note : '';
+  openDialog($('#partyDialog'), opener);
+}
+function normalizePhone(s) {
+  let d = s.replace(/[\s\-()]/g, '');
+  if (d.indexOf('+91') === 0) d = d.slice(3); else if (/^91\d{10}$/.test(d)) d = d.slice(2); else if (/^0\d{10}$/.test(d)) d = d.slice(1);
+  return d;
+}
+function submitParty(e) {
+  e.preventDefault();
+  const f = e.target; clearErrs(f);
+  const errs = [], name = f.elements.name.value.trim().replace(/\s+/g, ' ');
+  const old = editingParty ? db.parties.find(x => x.id === editingParty) : null;
+  const kind = old ? old.kind : f.elements.kind.value;
+  if (!name) errs.push({ el: $('#pName'), msg: 'Enter a name.' });
+  else if (name.length < 2) errs.push({ el: $('#pName'), msg: 'The name needs at least 2 characters.' });
+  else if (db.parties.some(p => p.kind === kind && p.id !== editingParty && p.name.toLowerCase() === name.toLowerCase()))
+    errs.push({ el: $('#pName'), msg: 'A ' + kind + ' with this name already exists.' });
+  const phoneRaw = f.elements.phone.value.trim(); let phone = '';
+  if (phoneRaw) { phone = normalizePhone(phoneRaw); if (!/^[6-9]\d{9}$/.test(phone)) errs.push({ el: $('#pPhone'), msg: 'Enter a 10-digit Indian mobile number starting with 6, 7, 8 or 9, or leave it blank.' }); }
+  const gstin = f.elements.gstin.value.trim().toUpperCase();
+  if (gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin)) errs.push({ el: $('#pGstin'), msg: 'GSTIN must be 15 characters in the usual format, for example 33ABCDE1234F1Z5.' });
+  const city = f.elements.city.value.trim(), note = f.elements.note.value.trim();
+  if (city.length > 60) errs.push({ el: $('#pCity'), msg: 'City can have at most 60 characters.' });
+  if (note.length > 200) errs.push({ el: $('#pNote'), msg: 'The note can have at most 200 characters.' });
+  if (errs.length) { showErrs(f, errs); return; }
+  if (old) {
+    Object.assign(old, { name: name, phone: phone, gstin: gstin, city: city, note: note });
+    db.txns.forEach(t => { if (t.partyId === old.id) t.partyName = name; });
+  } else db.parties.push({ id: uid(), kind: kind, name: name, phone: phone, gstin: gstin, city: city, note: note });
+  saveDB(); $('#partyDialog').close(); toast(old ? 'Saved.' : 'Added to the directory.'); renderAll();
+}
+
+/* ---------- Export / backup ---------- */
+function download(name, blob) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+// Cells starting with = + - @ can run as formulas in Excel, so they get a leading apostrophe.
+function csvCell(v) {
+  let s = String(v == null ? '' : v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function exportCSV() {
+  const list = getFiltered();
+  if (!list.length) { toast('There are no entries to export for the current filters.', 'error'); return; }
+  const rows = [['Date', 'Type', 'Category', 'Party', 'Payment mode', 'Amount (INR)', 'Note']].concat(
+    list.map(t => [t.date, t.type === 'sale' ? 'Sale' : 'Expense', t.category, t.partyName, t.mode, (t.paise / 100).toFixed(2), t.note]));
+  const csv = rows.map(r => r.map((c, i) => i === 5 ? c : csvCell(c)).join(',')).join('\r\n');
+  download('ledgerly-' + todayISO() + '.csv', new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  toast('CSV downloaded. Open it with Excel.');
+}
+function backup() {
+  download('ledgerly-backup-' + todayISO() + '.json', new Blob([JSON.stringify({ app: 'ledgerly', version: 1, exportedAt: new Date().toISOString(), data: db }, null, 2)], { type: 'application/json' }));
+  toast('Backup downloaded.');
+}
+function restore(file) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('That file is too large to be a Ledgerly backup.', 'error'); return; }
+  const r = new FileReader();
+  r.onerror = () => toast('The file could not be read.', 'error');
+  r.onload = () => {
+    let data;
+    try { data = sanitize(JSON.parse(String(r.result))); } catch (e) { toast('Restore failed: ' + (e.message || 'invalid file') , 'error'); return; }
+    if (!confirm('Replace ALL current data with this backup (' + data.txns.length + ' entries, ' + data.parties.length + ' customers/suppliers)?')) return;
+    db = data; saveDB(); renderAll(); toast('Backup restored.');
+  };
+  r.readAsText(file);
+}
+
+/* ---------- Filters ---------- */
+function syncFilterInputs() { $('#fQ').value = filters.q; $('#fType').value = filters.type; $('#fFrom').value = filters.from; $('#fTo').value = filters.to; }
+function applyPreset(name) {
+  const now = new Date(), today = isoOf(now);
+  if (name === 'month') { filters.from = isoOf(new Date(now.getFullYear(), now.getMonth(), 1)); filters.to = today; }
+  else if (name === '30') { const d = new Date(now); d.setDate(d.getDate() - 29); filters.from = isoOf(d); filters.to = today; }
+  else if (name === 'fy') { const y = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1; filters.from = y + '-04-01'; filters.to = (y + 1) + '-03-31'; }
+  else { filters.from = ''; filters.to = ''; filters.q = ''; filters.type = 'all'; }
+  syncFilterInputs(); renderAll();
+}
+
+/* ---------- Wiring ---------- */
+function wire() {
+  window.addEventListener('hashchange', () => route(true));
+  $('#skip').addEventListener('click', e => { e.preventDefault(); $('#main').focus(); });
+  $('#btnAdd').addEventListener('click', e => openTxnDialog(null, e.currentTarget));
+  $('#btnAddTxn').addEventListener('click', e => openTxnDialog(null, e.currentTarget));
+  $('#btnAddParty').addEventListener('click', e => openPartyDialog(null, e.currentTarget));
+  $('#bannerClose').addEventListener('click', () => { $('#banner').hidden = true; });
+
+  $('#filtersCard').addEventListener('submit', e => e.preventDefault());
+  $('#fQ').addEventListener('input', e => { filters.q = e.target.value; renderAll(); });
+  $('#fType').addEventListener('change', e => { filters.type = e.target.value; renderAll(); });
+  $('#fFrom').addEventListener('input', e => { filters.from = e.target.value; renderAll(); });
+  $('#fTo').addEventListener('input', e => { filters.to = e.target.value; renderAll(); });
+  $$('[data-preset]').forEach(b => b.addEventListener('click', () => applyPreset(b.dataset.preset)));
+
+  $$('[data-mode]').forEach(b => b.addEventListener('click', () => {
+    chartMode = b.dataset.mode; $$('[data-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderDashboard();
+  }));
+  const cb = $('#chart');
+  cb.addEventListener('click', e => { const g = e.target.closest('.grp'); if (g) showTip(g.dataset.key); });
+  cb.addEventListener('mouseover', e => { const g = e.target.closest('.grp'); if (g) showTip(g.dataset.key); });
+  cb.addEventListener('focusin', e => { const g = e.target.closest('.grp'); if (g) showTip(g.dataset.key); });
+  cb.addEventListener('keydown', e => { const g = e.target.closest('.grp'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); showTip(g.dataset.key); } });
+
+  const listClick = e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const id = b.dataset.id, act = b.dataset.act;
+    if (act === 'edit') openTxnDialog(id, b);
+    else if (act === 'del') {
+      const t = db.txns.find(x => x.id === id); if (!t) return;
+      if (confirm('Delete this ' + t.type + ' of ' + fmtINR(t.paise) + ' dated ' + fmtDate(t.date) + '? This cannot be undone.')) {
+        db.txns = db.txns.filter(x => x.id !== id); saveDB(); renderAll(); toast('Entry deleted.'); $('#h-' + currentView).focus();
+      }
+    } else if (act === 'pedit') openPartyDialog(id, b);
+    else if (act === 'pdel') {
+      const p = db.parties.find(x => x.id === id); if (!p) return;
+      const n = db.txns.filter(t => t.partyId === id).length;
+      if (confirm('Delete ' + p.name + ' from the directory?' + (n ? ' Their ' + n + ' entries will stay, with the name kept as text.' : '') + ' This cannot be undone.')) {
+        db.txns.forEach(t => { if (t.partyId === id) t.partyId = null; });
+        db.parties = db.parties.filter(x => x.id !== id); saveDB(); renderAll(); toast('Deleted.'); $('#h-' + currentView).focus();
+      }
+    }
+  };
+  $('#txnList').addEventListener('click', listClick);
+  $('#partyList').addEventListener('click', listClick);
+
+  $$('[data-pk]').forEach(b => b.addEventListener('click', () => {
+    partyKind = b.dataset.pk; $$('[data-pk]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderDirectory();
+  }));
+  $('#pQ').addEventListener('input', renderDirectory);
+
+  $('#txnForm').addEventListener('submit', submitTxn);
+  $('#txnForm').addEventListener('change', e => { if (e.target.name === 'etype') refreshTxnSelects(); });
+  $('#txnCancel').addEventListener('click', () => $('#txnDialog').close());
+  $('#txnDialog').addEventListener('close', onDialogClosed);
+  $('#partyForm').addEventListener('submit', submitParty);
+  $('#partyCancel').addEventListener('click', () => $('#partyDialog').close());
+  $('#partyDialog').addEventListener('close', onDialogClosed);
+
+  $('#btnCsv').addEventListener('click', exportCSV);
+  $('#btnPrint').addEventListener('click', () => window.print());
+  $('#bizName').addEventListener('input', e => { db.business = e.target.value.trim().slice(0, 80) || 'My Business'; $('#bizLabel').textContent = db.business; renderReport(); });
+  $('#bizName').addEventListener('change', saveDB);
+  $('#btnBackup').addEventListener('click', backup);
+  $('#restoreFile').addEventListener('change', e => { restore(e.target.files[0]); e.target.value = ''; });
+  $('#btnSample').addEventListener('click', () => {
+    if (confirm('Replace all current data with sample data? This cannot be undone.')) { db = sampleData(); saveDB(); renderAll(); toast('Sample data loaded.'); }
+  });
+  $('#btnWipe').addEventListener('click', () => {
+    if (confirm('Delete ALL entries and customers/suppliers from this browser? Download a backup first if you may need it. This cannot be undone.')) {
+      db = { version: 1, business: db.business, parties: [], txns: [] }; saveDB(); renderAll(); toast('All data deleted.');
+    }
+  });
+
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('#btnInstall').hidden = false; });
+  $('#btnInstall').addEventListener('click', async () => {
+    if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (_) {} deferred = null; $('#btnInstall').hidden = true;
+  });
+  window.addEventListener('appinstalled', () => { $('#btnInstall').hidden = true; });
+}
+
+/* ---------- Start ---------- */
+storageOK = testStorage();
+const loaded = loadDB(); db = loaded.data;
+if (loaded.fresh && storageOK) saveDB();
+$('#bannerText').textContent = storageOK
+  ? 'Prototype: your data is stored only in this browser (no account, no cloud). Sample data is included for demonstration; clear it under Reports → Data on this device.'
+  : 'Browser storage is blocked here, so nothing you enter will be kept after you close this page.';
+wire(); syncFilterInputs(); route(false);
+if (startupMsg) toast(startupMsg, 'error');
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+})();
+</script>
+</body>
+</html>
